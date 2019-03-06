@@ -167,32 +167,42 @@ public class CodeIndexer {
     private Document prepareDocumentForFwdIndex(Bag bag) {
         Document document = new Document();
         TextField textField  = new TextField("id", bag.getId() + "",Field.Store.NO);
+
         document.add(textField);
         String tokenString = "";
         for (TokenFrequency tf : bag) {
             tokenString += tf.getToken().getValue() + ":"+tf.getFrequency()+"::";
         }
+
         StoredField strField = new StoredField("tokens", tokenString.trim());
         document.add(strField);
+
         return document;
     }
 
     private Document prepareDocument(Bag bag, boolean isPrefixIndex) {
         Document document = new Document();
+
         StoredField strField = new StoredField("id", bag.getId() + "");
         document.add(strField);
+
         StoredField functionId = new StoredField("functionId", bag.getFunctionId() + "");
         document.add(functionId);
+
         StoredField sizeField = new StoredField("size", bag.getSize() + "");
         document.add(sizeField);
+
         String tokenString = "";
         int ct = BlockInfo.getMinimumSimilarityThreshold(bag.getSize(), SearchManager.th);
+
         StoredField computedThresholdField = new StoredField("ct", ct +"");
         int lct = BlockInfo.getMinimumSimilarityThreshold(bag.getSize(), (SearchManager.th-0.5f));
+
         StoredField lenientComputedThresholdField = new StoredField("lct", lct+ "");
         document.add(sizeField);
         document.add(computedThresholdField);
         document.add(lenientComputedThresholdField);
+
         int prefixLength = BlockInfo.getPrefixSize(bag.getSize(), ct);
         for (TokenFrequency tf : bag) {
             for(int i=0;i<tf.getFrequency();i++){
@@ -204,7 +214,9 @@ public class CodeIndexer {
                 break;
             }
         }
-        Field field = new Field("tokens",tokenString.trim(),Field.Store.NO,Field.Index.ANALYZED,Field.TermVector.WITH_POSITIONS);
+
+        Field field = new Field(
+                "tokens", tokenString.trim(), Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS);
         document.add(field);
         return document;
     }

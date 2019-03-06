@@ -224,6 +224,9 @@ public class SearchManager {
                 fis.close();
             }
         }
+
+        EmbeddingsComparison.readEmbeddings();
+
         Util.createDirs("output" + SearchManager.th / SearchManager.MUL_FACTOR);
         String reportFileName = "output" + SearchManager.th
                 / SearchManager.MUL_FACTOR + "/report.csv";
@@ -259,6 +262,11 @@ public class SearchManager {
                     System.out.println("shutting down VCQ, "
                             + System.currentTimeMillis());
                     SearchManager.verifyCandidateQueue.shutdown();
+
+                    System.out.println("vocab hits " +EmbeddingsComparison.hits );
+
+                    System.out.println("vocab misses " +EmbeddingsComparison.misses );
+
                     System.out.println("shutting down RCQ, "
                             + System.currentTimeMillis());
                     SearchManager.reportCloneQueue.shutdown();
@@ -371,8 +379,10 @@ public class SearchManager {
                     Util.INDEX_DIR)), indexWriterConfig);
             this.indexer = new CodeIndexer(Util.INDEX_DIR, indexWriter,
                     cloneHelper, SearchManager.th);
+
             fwdIndexWriter = new IndexWriter(FSDirectory.open(new File(
                     Util.FWD_INDEX_DIR)), fwdIndexWriterConfig);
+
             fwdIndexer = new CodeIndexer(Util.FWD_INDEX_DIR, fwdIndexWriter,
                     cloneHelper, SearchManager.th);
             File datasetDir = new File(SearchManager.DATASET_DIR);
@@ -386,15 +396,19 @@ public class SearchManager {
                         br = new BufferedReader(new InputStreamReader(
                                 new FileInputStream(inputFile), "UTF-8"));
                         String line;
-                        while ((line = br.readLine()) != null
-                                && line.trim().length() > 0) {
+
+                        while ((line = br.readLine()) != null && line.trim().length() > 0) {
+
                             Bag bag = cloneHelper.deserialise(line);
                             long startTime = System.currentTimeMillis();
+
                             Util.sortBag(bag);
-                            this.bagsSortTime += System.currentTimeMillis()
-                                    - startTime;
+
+                            this.bagsSortTime += System.currentTimeMillis() - startTime;
+
                             fwdIndexer.fwdIndexCodeBlock(bag);
                             this.indexer.indexCodeBlock(bag);
+
                         }
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();

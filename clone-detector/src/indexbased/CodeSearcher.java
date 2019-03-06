@@ -54,18 +54,16 @@ public class CodeSearcher {
                 analyzer);
     }
 
-    public void search(QueryBlock queryBlock, TermSearcher termSearcher)
-            throws IOException {
-        // List<String> tfsToRemove = new ArrayList<String>();
+    public void search(QueryBlock queryBlock, TermSearcher termSearcher) throws IOException {
+
         termSearcher.setReader(this.reader);
-        // System.out.println("setting reader: "+this.reader +
-        // Util.debug_thread());
+
         termSearcher.setQuerySize(queryBlock.getSize());
         termSearcher.setComputedThreshold(queryBlock.getComputedThreshold());
         int termsSeenInQuery = 0;
+
         StringBuilder prefixTerms = new StringBuilder();
-        for (Entry<String, TokenInfo> entry : queryBlock.getPrefixMap()
-                .entrySet()) {
+        for (Entry<String, TokenInfo> entry : queryBlock.getPrefixMap().entrySet()) {
             try {
                 prefixTerms.append(entry.getKey() + " ");
                 Query query = null;
@@ -75,7 +73,9 @@ public class CodeSearcher {
                 termSearcher.setSearchTerm(query.toString(this.field));
                 termSearcher.setFreqTerm(entry.getValue().getFrequency());
                 termsSeenInQuery += entry.getValue().getFrequency();
+
                 termSearcher.searchWithPosition(termsSeenInQuery);
+
             } catch (org.apache.lucene.queryparser.classic.ParseException e) {
                 System.out.println("cannot parse " + e.getMessage());
             }

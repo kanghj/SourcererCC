@@ -1,7 +1,9 @@
 package models;
 
-import java.util.NoSuchElementException;
+import java.util.*;
 
+import com.google.common.collect.Maps;
+import indexbased.EmbeddingsComparison;
 import utility.Util;
 import indexbased.SearchManager;
 
@@ -10,8 +12,8 @@ public class CloneValidator implements IListener, Runnable {
     @Override
     public void run() {
         try {
-            CandidatePair candidatePair = SearchManager.verifyCandidateQueue
-                    .remove();
+            CandidatePair candidatePair = SearchManager.verifyCandidateQueue.remove();
+
             this.validate(candidatePair);
         } catch (NoSuchElementException e) {
         } catch (InterruptedException e) {
@@ -21,20 +23,21 @@ public class CloneValidator implements IListener, Runnable {
 
     private void validate(CandidatePair candidatePair)
             throws InterruptedException {
-        if (candidatePair.candidateTokens != null
-                && candidatePair.candidateTokens.trim().length() > 0) {
+        if (candidatePair.candidateTokens != null && candidatePair.candidateTokens.trim().length() > 0) {
+
             int similarity = this.updateSimilarity(candidatePair.queryBlock,
                     candidatePair.candidateTokens,
                     candidatePair.computedThreshold,
                     candidatePair.candidateSize, candidatePair.simInfo);
             if (similarity > 0) {
-                ClonePair cp = new ClonePair(candidatePair.queryBlock.getId(),
-                        candidatePair.candidateId);
+                ClonePair cp = new ClonePair(candidatePair.queryBlock.getId(), candidatePair.candidateId);
+
                 SearchManager.reportCloneQueue.put(cp);
             }
+
             candidatePair.queryBlock = null;
             candidatePair.simInfo = null;
-            candidatePair = null;
+
         } else {
             System.out.println("tokens not found for document");
         }
@@ -42,52 +45,38 @@ public class CloneValidator implements IListener, Runnable {
 
     private int updateSimilarity(QueryBlock queryBlock, String tokens,
             int computedThreshold, int candidateSize, CandidateSimInfo simInfo) {
-        int tokensSeenInCandidate = 0;
         int similarity = simInfo.similarity;
+
+        Map<String, TokenInfo> map = new HashMap<>(queryBlock.getPrefixMap());
+        map.putAll(queryBlock.getSuffixMap());
+
         try {
+            Set<Map.Entry<String, Integer>> tokenStringSet = new HashSet<Map.Entry<String, Integer>>();
+            Set<Map.Entry<String, Integer>> queryStringSet = new HashSet<Map.Entry<String, Integer>>();
+
+            for (Map.Entry<String, TokenInfo> entry : map.entrySet()) {
+                queryStringSet.add(Maps.immutableEntry(entry.getKey(), entry.getValue().getFrequency()));
+            }
+
+
             for (String tokenfreqFrame : tokens.split("::")) {
                 String[] tokenFreqInfo = tokenfreqFrame.split(":");
-                if (Util.isSatisfyPosFilter(similarity, queryBlock.getSize(),
-                        simInfo.queryMatchPosition, candidateSize,
-                        simInfo.candidateMatchPosition, computedThreshold)) {
-                    // System.out.println("sim: "+ similarity);
-                    int candidatesTokenFreq = Integer
-                            .parseInt(tokenFreqInfo[1]);
-                    tokensSeenInCandidate += candidatesTokenFreq;
-                    if (tokensSeenInCandidate > simInfo.candidateMatchPosition) {
-                        TokenInfo tokenInfo = null;
-                        boolean matchFound = false;
-                        if (simInfo.queryMatchPosition < queryBlock
-                                .getPrefixMapSize()) {
-                            // check in prefix
-                            if (queryBlock.getPrefixMap().containsKey(
-                                    tokenFreqInfo[0])) {
-                                matchFound = true;
-                                tokenInfo = queryBlock.getPrefixMap().get(
-                                        tokenFreqInfo[0]);
-                                similarity = updateSimilarityHelper(simInfo,
-                                        tokenInfo, similarity,
-                                        candidatesTokenFreq);
-                            }
-                        }
-                        // check in suffix
-                        if (!matchFound
-                                && queryBlock.getSuffixMap().containsKey(
-                                        tokenFreqInfo[0])) {
-                            tokenInfo = queryBlock.getSuffixMap().get(
-                                    tokenFreqInfo[0]);
-                            similarity = updateSimilarityHelper(simInfo,
-                                    tokenInfo, similarity, candidatesTokenFreq);
-                        }
-                        if (similarity >= computedThreshold) {
-                            return similarity;
-                        }
-                    }
-                } else {
-                    break;
-                }
 
+                tokenStringSet.add(Maps.immutableEntry(tokenFreqInfo[0], Integer.valueOf(tokenFreqInfo[1])));
+
+//                TokenInfo tokenInfo  = map.get(tokenFreqInfo[0]);
             }
+
+//            float[] tokenVectorSum = EmbeddingsComparison.sum(tokenStringSet);
+//            float[] queryVectorSum = EmbeddingsComparison.sum(queryStringSet);
+
+            if (EmbeddingsComparison.cosineSimilarityExceedsThreshold(tokenStringSet, queryStringSet, 900)) {
+//                System.err.println("found ");
+                return 1;
+            }  else {
+//                System.err.println("NOT found ");
+            }
+
         } catch (ArrayIndexOutOfBoundsException e) {
             System.out.println("possible error in the format. tokens: "
                     + tokens);
@@ -95,9 +84,8 @@ public class CloneValidator implements IListener, Runnable {
         return -1;
     }
 
-    private int updateSimilarityHelper(CandidateSimInfo simInfo,
+    private int updateSimilarityHelper(
             TokenInfo tokenInfo, int similarity, int candidatesTokenFreq) {
-        simInfo.queryMatchPosition = tokenInfo.getPosition();
         similarity += Math.min(tokenInfo.getFrequency(), candidatesTokenFreq);
         // System.out.println("similarity: "+ similarity);
         return similarity;

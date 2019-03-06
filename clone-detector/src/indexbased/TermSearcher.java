@@ -42,12 +42,14 @@ public class TermSearcher {
 					Term term = new Term("tokens", this.searchTerm);
 					for (AtomicReaderContext ctx : this.reader.getContext().leaves()) {
 						int base = ctx.docBase;
-						// SpanTermQuery spanQ = new SpanTermQuery(term);
+
 						try {
 							DocsAndPositionsEnum docEnum = MultiFields
-									.getTermPositionsEnum(ctx.reader(),
+									.getTermPositionsEnum(
+											ctx.reader(),
 											MultiFields.getLiveDocs(ctx.reader()),
 											"tokens", term.bytes());
+
 							if (null != docEnum) {
 								int doc = DocsEnum.NO_MORE_DOCS;
 								while ((doc = docEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
@@ -75,16 +77,7 @@ public class TermSearcher {
 												.parseInt(SearchManager.searcher
 														.getDocument(docId).get("size"));
 									}
-									if (!Util.isSatisfyPosFilter(
-											this.simMap.get(docId).similarity,
-											this.querySize, queryTermsSeen,
-											simInfo.candidateSize,
-											simInfo.candidateMatchPosition,
-											this.computedThreshold)) {
-									//	System.out.println("before removing in simmap "+ Util.debug_thread());
-										this.simMap.remove(docId);
-										//System.out.println("after removing in simmap "+ Util.debug_thread());
-									}
+
 								}
 							}else{
 								if(SearchManager.loggingMode.equals("D")){

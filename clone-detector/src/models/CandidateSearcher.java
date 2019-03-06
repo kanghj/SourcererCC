@@ -25,9 +25,11 @@ public class CandidateSearcher implements IListener, Runnable {
 			InterruptedException {
 		TermSearcher termSearcher = new TermSearcher();
 		SearchManager.searcher.search(queryBlock, termSearcher);
+
 		QueryCandidates qc = new QueryCandidates();
 		qc.queryBlock = queryBlock;
 		qc.termSearcher = termSearcher;
+
 		SearchManager.queryCandidatesQueue.put(qc);
 	}
 

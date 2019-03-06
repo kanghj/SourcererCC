@@ -30,38 +30,42 @@ public class CandidateProcessor implements IListener, Runnable {
 
     }
 
-    private void processResultWithFilter(TermSearcher result,
-            QueryBlock queryBlock) throws InterruptedException {
+    private void processResultWithFilter(
+            TermSearcher result,  QueryBlock queryBlock) throws InterruptedException {
         // System.out.println("HERE, thread_id: " + Util.debug_thread() +
         // ", query_id "+ queryBlock.getId());
         Map<Long, CandidateSimInfo> codeBlockIds = result.getSimMap();
+
         if (SearchManager.isGenCandidateStats) {
             SearchManager.updateNumCandidates(codeBlockIds.size());
         }
+
         for (Entry<Long, CandidateSimInfo> entry : codeBlockIds.entrySet()) {
+
             Document doc = null;
             try {
                 doc = SearchManager.searcher.getDocument(entry.getKey());
                 CandidateSimInfo simInfo = entry.getValue();
                 long candidateId = Long.parseLong(doc.get("id"));
-                long functionIdCandidate = Long
-                        .parseLong(doc.get("functionId"));
+
+
                 if ((candidateId <= queryBlock.getId())) {
                     // || (functionIdCandidate == queryBlock.getFunctionId())) {
                     continue; // we reject the candidate
                 }
+
                 int newCt = -1;
                 int candidateSize = Integer.parseInt(doc.get("size"));
                 if (candidateSize > queryBlock.getSize()) {
                     newCt = Integer.parseInt(doc.get("ct"));
                 }
-                CustomCollectorFwdIndex collector = SearchManager.fwdSearcher
-                        .search(doc);
+                CustomCollectorFwdIndex collector = SearchManager.fwdSearcher.search(doc);
+
                 List<Integer> blocks = collector.getBlocks();
                 if (!blocks.isEmpty()) {
                     if (blocks.size() == 1) {
-                        Document document = SearchManager.fwdSearcher
-                                .getDocument(blocks.get(0));
+                        Document document = SearchManager.fwdSearcher.getDocument(blocks.get(0));
+
                         String tokens = document.get("tokens");
                         CandidatePair candidatePair = null;
                         if (newCt != -1) {

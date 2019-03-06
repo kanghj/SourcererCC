@@ -282,7 +282,9 @@ public class CloneHelper {
 					TokenInfo tokenInfo = new TokenInfo(Integer.parseInt(tokenAndFreq[1]));
 					Entry<String,TokenInfo> entry =
 						    new AbstractMap.SimpleEntry<String, TokenInfo>(tokenStr, tokenInfo);
-						listOfTokens.add(entry);
+
+					listOfTokens.add(entry);
+
 					queryBlockSize += tokenInfo.getFrequency();
 					
 				} catch (ArrayIndexOutOfBoundsException e) {

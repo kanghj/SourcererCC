@@ -133,9 +133,7 @@ public class Util {
     public static boolean isSatisfyPosFilter(int similarity, int querySize,
             int termsSeenInQueryBlock, int candidateSize,
             int termsSeenInCandidate, int computedThreshold) {
-        return computedThreshold <= similarity
-                + Math.min(querySize - termsSeenInQueryBlock, candidateSize
-                        - termsSeenInCandidate);
+        return true; //
     }
 
     public static void writeJsonStream(String filename,
